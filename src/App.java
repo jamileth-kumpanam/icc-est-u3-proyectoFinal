@@ -3,7 +3,7 @@ import java.io.File;
 import javax.swing.SwingUtilities;
 
 import views.MainFrame;
-
+    
 public class App {
     public static void main(String[] args) {
         File dataDir = new File("data");
