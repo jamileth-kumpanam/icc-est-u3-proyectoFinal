@@ -1,126 +1,98 @@
 package views;
 
-import models.Node;
-import javax.swing.JPanel;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Dimension;
-import java.awt.Color;
-import java.awt.BasicStroke;
-import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import controllers.GraphController;
+import models.*;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.List;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 public class MapPanel extends JPanel {
+    private GraphController controller;
+    private Node selectedNode = null; // Nodo origen para la conexión
+    private List<Node> path; 
+    private List<VisitedEdge> vEdges;
+    private int eIdx = 0;
+    private boolean exploring = false, eDone = true;
+    private Timer timer;
+    private Image bg;
 
-    private BufferedImage mapImage;
+    public MapPanel(GraphController gc) {
+        this.controller = gc;
+        this.bg = new ImageIcon("src/resources/mapa.png").getImage();
 
-    private List<Node> nodes = new ArrayList<>();
-    private List<String[]> edges = new ArrayList<>();
-
-    private Node selectedNode = null;
-    private char nextId = 'A';
-
-    public MapPanel() {
-        try {
-            mapImage = ImageIO.read(new File("src/resources/mapa.png"));
-            setPreferredSize(new Dimension(
-                    mapImage.getWidth(),
-                    mapImage.getHeight()
-            ));
-        } catch (IOException e) {
-            System.err.println("Error cargando el mapa: " + e.getMessage());
-        }
-
-        addMouseListener(new MouseAdapter() {
+        this.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                Node clickedNode = controller.getGraph().findNodeNear(e.getX(), e.getY(), 20);
 
-                int x = e.getX();
-                int y = e.getY();
-
-                Node clickedNode = getNodeAt(x, y);
-
-                if (clickedNode != null) {
-
+                if (clickedNode == null) {
+                    // Si no hay nodo cerca, creamos uno nuevo
+                    String id = "N" + (controller.getGraph().getNodes().size() + 1);
+                    controller.getGraph().addNode(new Node(id, e.getX(), e.getY()));
+                    selectedNode = null; 
+                } else {
+                    // Si hacemos clic en un nodo...
                     if (selectedNode == null) {
+                        // Seleccionamos el primero (Origen)
                         selectedNode = clickedNode;
+                    } else if (selectedNode != clickedNode) {
+                        // Si ya había uno seleccionado, conectamos con el segundo (Destino)
+                        controller.getGraph().addEdge(selectedNode.getId(), clickedNode.getId());
+                        selectedNode = null; // Resetear selección
                     } else {
-                        if (!selectedNode.id.equals(clickedNode.id)) {
-                            edges.add(new String[]{selectedNode.id, clickedNode.id});
-                        }
-                        selectedNode = null;
+                        selectedNode = null; // Deseleccionar si clicamos el mismo
                     }
-                    repaint();
                 }
-                else {
-                    String id = String.valueOf(nextId);
-                    nextId++;
-
-                    Node node = new Node(id, x, y);
-                    nodes.add(node);
-                    repaint();
-                }
+                repaint();
             }
         });
+    }
+
+    public void setPath(List<Node> p, List<VisitedEdge> ve, boolean em) {
+        this.path = p; this.vEdges = ve; this.exploring = em; this.eDone = !em; this.eIdx = 0;
+        if (timer != null) timer.stop();
+        if (em && ve != null) {
+            timer = new Timer(50, e -> {
+                if (eIdx < vEdges.size()) { eIdx++; repaint(); }
+                else { eDone = true; timer.stop(); repaint(); }
+            });
+            timer.start();
+        } else repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
-        if (mapImage != null) {
-            g.drawImage(mapImage, 0, 0, this);
-        }
-
         Graphics2D g2 = (Graphics2D) g;
+        g2.drawImage(bg, 0, 0, getWidth(), getHeight(), this);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g2.setColor(Color.GRAY);
-        g2.setStroke(new BasicStroke(2));
-
-        for (String[] edge : edges) {
-            Node n1 = findNode(edge[0]);
-            Node n2 = findNode(edge[1]);
-
-            if (n1 != null && n2 != null) {
-                g2.drawLine(n1.x, n1.y, n2.x, n2.y);
+        // 1. Dibujar conexiones existentes (Negro)
+        g2.setStroke(new BasicStroke(1));
+        g2.setColor(Color.BLACK);
+        for (Node a : controller.getGraph().getNodes()) {
+            for (Node b : controller.getGraph().getNeighbors(a.getId())) {
+                g2.drawLine(a.getX(), a.getY(), b.getX(), b.getY());
             }
         }
 
-        for (Node node : nodes) {
-            if (node == selectedNode) {
-                g2.setColor(Color.BLUE);
-            } else {
-                g2.setColor(Color.RED);
+        // 2. Trazar RUTA ROJA (Modo Resultado)
+        if (path != null && !path.isEmpty() && eDone) {
+            g2.setColor(Color.RED);
+            g2.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            for (int i = 0; i < path.size() - 1; i++) {
+                g2.drawLine(path.get(i).getX(), path.get(i).getY(), 
+                           path.get(i+1).getX(), path.get(i+1).getY());
             }
-            g2.fillOval(node.x - 6, node.y - 6, 12, 12);
-            g2.setColor(Color.BLACK);
-            g2.drawString(node.id, node.x + 8, node.y - 8);
         }
-    }
 
-    private Node getNodeAt(int x, int y) {
-        for (Node node : nodes) {
-            int dx = x - node.x;
-            int dy = y - node.y;
-            if (dx * dx + dy * dy <= 400) { 
-                return node;
-            }
+        // 3. Dibujar Nodos (Azul / Amarillo si está seleccionado)
+        for (Node n : controller.getGraph().getNodes()) {
+            g2.setColor(n == selectedNode ? Color.YELLOW : Color.BLUE);
+            g2.fillOval(n.getX() - 12, n.getY() - 12, 24, 24);
+            g2.setColor(Color.WHITE);
+            g2.drawString(n.getId(), n.getX() - 8, n.getY() + 5);
         }
-        return null;
-    }
-
-    private Node findNode(String id) {
-        for (Node node : nodes) {
-            if (node.id.equals(id)) {
-                return node;
-            }
-        }
-        return null;
     }
 }

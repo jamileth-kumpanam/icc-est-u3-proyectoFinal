@@ -1,0 +1,5 @@
+NODES
+N1,303,67,false
+N2,625,77,false
+N3,495,180,false
+EDGES
