@@ -34,6 +34,9 @@ public class GraphController {
                 if (c.getRed() < 150 && c.getGreen() < 150 && c.getBlue() < 150) return false;
             }
         }
+        
         return true;
+
+
     }
 }

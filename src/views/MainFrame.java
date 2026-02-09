@@ -18,7 +18,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame() {
         gc = new GraphController(g);
-        setTitle("Sebastian Lopez y Jamileth Kumpanam");
+        setTitle("Sebastian Lopez y Jamileth Kumpanam 67.01 - Proyecto Final");
         setSize(1300, 850);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -28,9 +28,9 @@ public class MainFrame extends JFrame {
         mp.setBounds(0, 0, 1300, 850);
         layeredPane.add(mp, JLayeredPane.DEFAULT_LAYER);
 
-        // PANEL LATERAL ESTILO GOOGLE MAPS
+        
         JPanel sidePanel = createFloatingPanel();
-        sidePanel.setBounds(25, 25, 300, 580); // Un poco más largo para el nuevo botón
+        sidePanel.setBounds(25, 25, 300, 580); 
         sidePanel.setLayout(new GridLayout(0, 1, 8, 8));
         sidePanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -38,10 +38,10 @@ public class MainFrame extends JFrame {
         logo.setFont(new Font("SansSerif", Font.BOLD, 20));
         logo.setForeground(new Color(25, 103, 210));
 
-        // Botones con colores empresariales
+        // Diseño de los botones con colores personalizados
         JButton btnBuscar = createBtn("BUSCAR RUTA", new Color(25, 103, 210));
         JButton btnEliminarNodo = createBtn("ELIMINAR NODO", new Color(217, 48, 37));
-        JButton btnEliminarEdge = createBtn("ELIMINAR CONEXIÓN", new Color(244, 180, 0)); // Color ámbar/aviso
+        JButton btnEliminarEdge = createBtn("ELIMINAR CONEXIÓN", new Color(244, 180, 0)); 
         JButton btnLimpiar = createBtn("LIMPIAR TODO", Color.GRAY);
         JButton btnMetricas = createBtn("VER MÉTRICAS", Color.DARK_GRAY);
 
@@ -52,7 +52,7 @@ public class MainFrame extends JFrame {
         sidePanel.add(chkExp);
         sidePanel.add(btnBuscar);
         sidePanel.add(btnEliminarNodo);
-        sidePanel.add(btnEliminarEdge); // NUEVO BOTÓN
+        sidePanel.add(btnEliminarEdge); 
         sidePanel.add(btnLimpiar);
         sidePanel.add(btnMetricas);
 
@@ -66,7 +66,7 @@ public class MainFrame extends JFrame {
 
             if (g.getNode(id1) != null && g.getNode(id2) != null) {
                 g.removeEdge(id1, id2);
-                mp.setPath(null, null, false); // Limpiar cualquier ruta dibujada
+                mp.setPath(null, null, false); // Limpiar ruta resaltada si existía
                 repaint();
                 JOptionPane.showMessageDialog(this, "Conexión entre " + id1 + " y " + id2 + " eliminada.");
             } else {
@@ -74,7 +74,7 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // Eliminar Nodo (Por selección amarilla)
+        
         btnEliminarNodo.addActionListener(e -> {
             Node seleccionado = mp.getSelectedNode();
             if (seleccionado != null) {
